@@ -5,12 +5,17 @@ var whitePlane, blackPlane;
 var whiteNode, blackNode;
 var WIDTH = 500, HEIGHT = 500;
 
+var time = 0;
+var frames = new Array();
+var saveFrames = true;
+var finishFrames = false;
+
 init();
 animate();
 
 
 function init() {
-	renderer = new THREE.WebGLRenderer();
+	renderer = new THREE.WebGLRenderer({preserveDrawingBuffer:true});
 	renderer.setSize( 500, 500 );
 	document.getElementById( 'container' ).appendChild( renderer.domElement );
 	
@@ -32,19 +37,31 @@ function init() {
 
 	whiteNode.add( whitePlane );
 	blackNode.add( blackPlane );
-	// blackNode.scale.x = 500;
 	blackNode.position.x = 500;
 	blackNode.rotation.z = Math.PI;
+	blackNode.scale.set( 500, 500, 1 );
 
 	scene.add( whiteNode );
 	scene.add( blackNode );
-
 
 	expand( whiteNode, WIDTH, HEIGHT );
 
 }
 
-var expandCount = 0;
+function saveFramesToZip() {
+	var pad = function(n, width, z) {
+		z = z || '0';
+		n = n + '';
+		return n.length >= width ? n : new Array(width - n.length + 1).join(z) + n;
+	}
+
+	var zip = new JSZip();
+	var folder = zip.folder( "frames" );
+	for ( var i=0; i<frames.length; i++ ) {
+		folder.file( "frame" + pad(i,3,0) + ".png", frames[i], {base64:true} );
+	}
+	location.href = "data:application/zip;base64,"+zip.generate();
+}
 
 function expand( node, scaleX, scaleY ) {
 
@@ -72,22 +89,37 @@ function expand( node, scaleX, scaleY ) {
 		this.node.scale.y = this.scaleY;
 	})
 	.onComplete(function(){
-		// console.log( 'complete' );
-		// expand( whiteNode, WIDTH, HEIGHT );
 		this.node.position.z = 0;
 		expand( this.node==whiteNode?blackNode:whiteNode, WIDTH, HEIGHT );
+		if ( saveFrames && this.node == blackNode ) {
+			saveFrames = false
+			finishFrames = true;
+		}
 	})
 
 	tween.chain( nextTween );
-	tween.start();
+	tween.start( time );
 
 }
 
 function animate() {
 
-	requestAnimationFrame( animate );
+	// requestAnimationFrame( animate );
+	setTimeout( function() {
+        requestAnimationFrame( animate );
+    }, 1000 / 30.0 );
 
-	TWEEN.update();
+	TWEEN.update( time );
+	time += (1000 / 30.0 );
 	renderer.render(scene, camera);
+
+	if ( saveFrames ) {
+		frames.push( renderer.domElement.toDataURL("image/png").replace(/^data:image\/(png|jpg);base64,/, "") );
+	}
+	if ( finishFrames ) {
+		saveFramesToZip();
+		saveFrames = false;
+		finishFrames = false;
+	}
 
 }
