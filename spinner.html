@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>Sketching</title>
+		<meta charset="utf-8">
+		<style>
+			body {
+				margin: 0px;
+				background-color: #555555;
+				overflow: hidden;
+				font-family: Helvetica;
+			}
+			#container {
+				background-color: #000000;
+				width: 500px;
+				height: 500px;
+				border: 1px white solid;
+				margin: 0 auto;
+				box-shadow: 0px 0px 20px #000000;
+			}
+			#wrapper {
+				position: absolute;
+				top: 50%;
+				margin-top: -250px;
+				left: 0;
+				width: 100%;
+			}
+			#download {
+				font-weight: bold;
+				font-size: 32px;
+				color: white;
+				text-shadow: -2px -2px 0px rgb( 0, 0, 0 );
+				cursor: pointer;
+				display: none;
+			}
+		</style>
+	</head>
+	<body>
+		<span id="download">
+			download frames
+		</span>
+
+		<img id="whatever">
+		<div id='wrapper'>
+			<div id='container'>
+			</div>
+		</div>
+
+		<script src="../three.js/build/three.min.js"></script>
+		<script src="./js/libs/jquery-2.0.3.min.js"></script>
+		<script src="./js/libs/dat.gui.min.js"></script>
+		<script src="./js/libs/utils.js"></script>
+		<script src="./js/libs/Tween.js"></script>
+		<script src="./js/libs/jszip.js"></script>
+		<script src="./js/libs/jszip-deflate.js"></script>
+		<script src="./js/apps/spinner.js"></script>
+	</body>
+</html>
