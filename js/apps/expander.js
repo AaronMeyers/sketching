@@ -8,7 +8,12 @@ var WIDTH = 500, HEIGHT = 500;
 var time = 0;
 var frames = new Array();
 var saveFrames = true;
-var finishFrames = false;
+
+var rumbleAmount = 25;
+var rumbleLength = 500;
+var expandLength = 300;
+
+var frameLength = 1000/30;
 
 init();
 animate();
@@ -44,8 +49,30 @@ function init() {
 	scene.add( whiteNode );
 	scene.add( blackNode );
 
+	$('#download').hide()
+	$('#download').on( 'click', saveFramesToZip );
+
+	initGUI();
+
 	expand( whiteNode, WIDTH, HEIGHT );
 
+}
+
+function initGUI() {
+
+	gui = new dat.GUI({
+		height: 1000,
+		width:300
+	});
+
+	gui.add( this, 'rumbleAmount', 20, 100 );
+	gui.add( this, 'rumbleLength', 0, 1000 );
+	gui.add( this, 'expandLength', 0, 1000 );
+	// gui.add( this, 'blah' );
+}
+
+function blah() {
+	console.log( 'blah' );
 }
 
 function saveFramesToZip() {
@@ -74,30 +101,46 @@ function expand( node, scaleX, scaleY ) {
 		scaleX: node.scale.x
 	})
 	.to({scaleX:scaleX}, 300)
+	.delay( saveFrames ? 0 : 500 )
 	.easing( TWEEN.Easing.Quadratic.InOut )
 	.onUpdate(function(){
 		this.node.scale.x = this.scaleX;
-	})
+	});
 
-	var nextTween = new TWEEN.Tween({
+	var rumbleUpTween = new TWEEN.Tween({
+		node: node,
+		rumble: 0
+	})
+	.to({rumble:1}, rumbleLength)
+	.delay( saveFrames ? 0 : 500 )
+	.onUpdate(function(){
+		this.node.position.y = utils.random( -rumbleAmount * this.rumble, rumbleAmount * this.rumble );
+		this.node.scale.y = initialHeight + initialHeight * this.rumble;
+	});
+
+	var finalTween = new TWEEN.Tween({
 		node: node,
 		scaleY: node.scale.y
 	})
-	.to({scaleY:scaleY}, 300)
-	.easing( TWEEN.Easing.Quadratic.InOut )
+	.to({scaleY:scaleY}, expandLength)
+	.easing( TWEEN.Easing.Circular.InOut )
 	.onUpdate(function(){
 		this.node.scale.y = this.scaleY;
+	})
+	.onStart(function(){
+		this.node.position.y = 0;
 	})
 	.onComplete(function(){
 		this.node.position.z = 0;
 		expand( this.node==whiteNode?blackNode:whiteNode, WIDTH, HEIGHT );
 		if ( saveFrames && this.node == blackNode ) {
 			saveFrames = false
-			finishFrames = true;
+			$('#download').fadeIn();
 		}
 	})
 
-	tween.chain( nextTween );
+	tween.chain( rumbleUpTween );
+	rumbleUpTween.chain( finalTween );
 	tween.start( time );
 
 }
@@ -107,19 +150,14 @@ function animate() {
 	// requestAnimationFrame( animate );
 	setTimeout( function() {
         requestAnimationFrame( animate );
-    }, 1000 / 30.0 );
+    }, frameLength );
 
 	TWEEN.update( time );
-	time += (1000 / 30.0 );
+	time += frameLength;
 	renderer.render(scene, camera);
 
 	if ( saveFrames ) {
 		frames.push( renderer.domElement.toDataURL("image/png").replace(/^data:image\/(png|jpg);base64,/, "") );
-	}
-	if ( finishFrames ) {
-		saveFramesToZip();
-		saveFrames = false;
-		finishFrames = false;
 	}
 
 }

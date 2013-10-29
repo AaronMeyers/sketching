@@ -8,6 +8,7 @@
 				margin: 0px;
 				background-color: #555555;
 				overflow: hidden;
+				font-family: Helvetica;
 			}
 			#container {
 				background-color: #FF0000;
@@ -24,9 +25,20 @@
 				left: 0;
 				width: 100%;
 			}
+			#download {
+				font-weight: bold;
+				font-size: 32px;
+				color: white;
+				text-shadow: -2px -2px 0px rgb( 0, 0, 0 );
+				cursor: pointer;
+			}
 		</style>
 	</head>
 	<body>
+		<span id="download">
+			download frames
+		</span>
+
 		<img id="whatever">
 		<div id='wrapper'>
 			<div id='container'>
@@ -34,6 +46,9 @@
 		</div>
 
 		<script src="../three.js/build/three.min.js"></script>
+		<script src="./js/libs/jquery-2.0.3.min.js"></script>
+		<script src="./js/libs/dat.gui.min.js"></script>
+		<script src="./js/libs/utils.js"></script>
 		<script src="./js/libs/Tween.js"></script>
 		<script src="./js/libs/jszip.js"></script>
 		<script src="./js/libs/jszip-deflate.js"></script>
