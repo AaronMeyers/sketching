@@ -1,59 +1,75 @@
 var camera, renderer, scene;
-var WIDTH = 500, HEIGHT = 500;
+var WIDTH, HEIGHT;
 var time = 0;
 var frames = new Array();
-var saveFrames = false;
+var saveFrames = true;
 var frameLength = 1000/30;
 
 var circles = new Array();
+var rotationOffset = 0;
+var positionOffset;
 
-init();
-animate();
+
+$(document).ready(function(){
+
+	WIDTH = HEIGHT = 250;
+	positionOffset = WIDTH / 25;
+	$('#container').css( 'width', WIDTH + 'px' );
+	$('#container').css( 'height', HEIGHT + 'px' );
+	$('#wrapper').css( 'margin-top', (-HEIGHT/2) + 'px' );
+
+	init();
+	animate();
+});
 
 
 function init() {
+
 	renderer = new THREE.WebGLRenderer({preserveDrawingBuffer:true});
-	renderer.setSize( 500, 500 );
+	renderer.setSize( WIDTH, HEIGHT );
 	document.getElementById( 'container' ).appendChild( renderer.domElement );
 	
 	scene = new THREE.Scene();
 	camera = new THREE.OrthographicCamera( WIDTH / -2, WIDTH / 2, HEIGHT / 2, HEIGHT / - 2, - 5000, 5000 );
 
-	var circleGeom = new THREE.CircleGeometry( WIDTH / 2, 60 );
-	var firstCircle = new THREE.Mesh( circleGeom, new THREE.MeshBasicMaterial({color:0xFFFFFF}) );
-	scene.add( firstCircle );
-
-	circles.push( firstCircle );
-
-	var theParent = firstCircle;
-
+	var theParent = scene;
 	for ( var i=0; i<16; i++ ) {
-		var circleGeom = new THREE.CircleGeometry( ( WIDTH - i * 30 ) / 2, 60 );
-		var circleMesh = new THREE.Mesh( circleGeom, new THREE.MeshBasicMaterial({color:(i%2==0)?0x000000:0xFFFFFF}) );
-		// var circleMesh = new THREE.Mesh( circleGeom, new THREE.MeshBasicMaterial({color:0x000000}) );
-		// circleMesh.scale.set( .9, .9, .9 );
+		var circleGeom = new THREE.CircleGeometry( ( WIDTH - i * (WIDTH/15) ) / 2, 60 );
+		var circleMesh = new THREE.Mesh( circleGeom, new THREE.MeshBasicMaterial({color:(i%2==1)?0x000000:0xFFFFFF}) );
 		circleMesh.position.z = 1;
-		circleMesh.rotation.z = Math.PI * .125;
+		circleMesh.rotation.z = Math.PI * rotationOffset;
 		theParent.add( circleMesh );
-		circleMesh.position.y = 10;
 		theParent = circleMesh;
-
 		circles.push( circleMesh );
 	}
 
-	$('#download').hide()
-	$('#download').on( 'click', saveFramesToZip );
-
-	initGUI();
+	doSpin();
 
 }
 
-function initGUI() {
+function doSpin() {
 
-	gui = new dat.GUI({
-		height: 1000,
-		width:300
-	});
+	rotationOffset = 0;
+
+	var tween = new TWEEN.Tween(this)
+	.to({rotationOffset:2}, 4000)
+	.easing( TWEEN.Easing.Quadratic.InOut )
+	.onUpdate(function(){
+		var positionMod = Math.sin( Math.PI * rotationOffset * .5 );
+		for ( var i=0; i<circles.length; i++ ) {
+			circles[i].rotation.z = Math.PI * rotationOffset;
+			circles[i].position.y = i==0 ? 0 : positionMod * positionOffset;
+		}
+	})
+	.onComplete(function(){
+		if ( saveFrames ) {
+			saveFrames = false
+			saveFramesToZip();
+			$('#download').fadeIn();
+		}
+		doSpin();
+	})
+	.start();
 }
 
 function saveFramesToZip() {
@@ -68,19 +84,20 @@ function saveFramesToZip() {
 	for ( var i=0; i<frames.length; i++ ) {
 		folder.file( "frame" + pad(i,3,0) + ".png", frames[i], {base64:true} );
 	}
-	location.href = "data:application/zip;base64,"+zip.generate();
+
+	// location.href = "data:application/zip;base64,"+zip.generate();
+	var blobLink = document.getElementById('download');
+	blobLink.download = "frames.zip";
+	blobLink.href = window.URL.createObjectURL(
+		zip.generate({type:"blob"})
+	);
 }
 
 function animate() {
 
-	// requestAnimationFrame( animate );
 	setTimeout( function() {
         requestAnimationFrame( animate );
     }, frameLength );
-
-    for ( var i=0; i<circles.length; i++ ) {
-    	circles[i].rotation.z += .01;
-    }
 
 	TWEEN.update( time );
 	time += frameLength;
