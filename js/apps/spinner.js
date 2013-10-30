@@ -25,7 +25,7 @@ $(document).ready(function(){
 
 function init() {
 
-	renderer = new THREE.WebGLRenderer({preserveDrawingBuffer:true});
+	renderer = new THREE.WebGLRenderer({preserveDrawingBuffer:true, antialias:true});
 	renderer.setSize( WIDTH, HEIGHT );
 	document.getElementById( 'container' ).appendChild( renderer.domElement );
 	
