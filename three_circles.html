@@ -56,8 +56,11 @@
 		<script>
 			var scene;
 			$(document).ready(function(){
-				scene = new Scene({width:500,height:500});
-				scene.update();
+				var dimensions = {'width': 500, 'height': 500};
+				$('#container').css( dimensions );
+				$('#wrapper').css( 'margin-top', -dimensions.height/2 );
+				scene = new Scene( dimensions );
+				scene.init();
 			});
 		</script>
 	</body>
