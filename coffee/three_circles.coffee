@@ -16,13 +16,12 @@ class Scene
 		@frames = []
 		@saveFrames = false
 		@gui = new dat.GUI {height: 1000, width:300}
-		@circleDistanceScale = 1.15
-		@gui.add( this, 'circleDistanceScale', 1, 2 ).onChange ( value ) =>
-			i = 0
-			while i < @circle.children.length
-				aCircle = @circle.children[i].children[0]
-				aCircle.position.x = aCircle.geometry.radius * value
-				i++
+		# @gui.add( this, 'circleDistanceScale', 1, 2 ).onChange ( value ) =>
+		# 	i = 0
+		# 	while i < @circle.children.length
+		# 		aCircle = @circle.children[i].children[0]
+		# 		aCircle.position.x = aCircle.geometry.radius * value
+		# 		i++
 
 	init: ->
 
@@ -34,13 +33,14 @@ class Scene
 		i = 0
 		numCircles = 3
 		while i < numCircles
-			aCircleGeom			= new THREE.CircleGeometry @circle.geometry.radius * .465, 60
+			# see here: http://en.wikipedia.org/wiki/Circle_packing_in_a_circle
+			aCircleGeom			= new THREE.CircleGeometry @circle.geometry.radius / (1+(2/3)*Math.sqrt(3)), 60
 			aCircleMaterial		= new THREE.MeshBasicMaterial {color:0x000000}
 
 			aNode				= new THREE.Object3D
 			aCircle 			= new THREE.Mesh aCircleGeom, aCircleMaterial
 			aCircle.position.z = 1
-			aCircle.position.x = aCircle.geometry.radius * @circleDistanceScale
+			aCircle.position.x = @circle.geometry.radius - aCircle.geometry.radius
 			aNode.rotation.z = (i / numCircles) * Math.PI * 2
 			# aCircle.position.x = aCircle.geometry.radius * 2 * Math.sin( i / numCircles * Math.PI * 2 )
 			# aCircle.position.y = aCircle.geometry.radius * 2 * Math.cos( i / numCircles * Math.PI * 2 )
