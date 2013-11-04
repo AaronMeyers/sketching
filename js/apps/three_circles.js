@@ -5,6 +5,7 @@ var Scene,
 Scene = (function() {
   function Scene(options) {
     this.update = __bind(this.update, this);
+    var _this = this;
     this.WIDTH = options.width !== void 0 ? options.width : 500;
     this.HEIGHT = options.height !== void 0 ? options.height : 500;
     this.renderer = new THREE.WebGLRenderer({
@@ -19,9 +20,48 @@ Scene = (function() {
     this.time = 0;
     this.frames = [];
     this.saveFrames = false;
+    this.gui = new dat.GUI({
+      height: 1000,
+      width: 300
+    });
+    this.circleDistanceScale = 1.15;
+    this.gui.add(this, 'circleDistanceScale', 1, 2).onChange(function(value) {
+      var aCircle, i, _results;
+      i = 0;
+      _results = [];
+      while (i < _this.circle.children.length) {
+        aCircle = _this.circle.children[i].children[0];
+        aCircle.position.x = aCircle.geometry.radius * value;
+        _results.push(i++);
+      }
+      return _results;
+    });
   }
 
   Scene.prototype.init = function() {
+    var aCircle, aCircleGeom, aCircleMaterial, aNode, circleGeom, circleMaterial, i, numCircles;
+    circleGeom = new THREE.CircleGeometry(this.WIDTH / 2, 60);
+    circleMaterial = new THREE.MeshBasicMaterial({
+      color: 0xFFFFFF
+    });
+    this.circle = new THREE.Mesh(circleGeom, circleMaterial);
+    i = 0;
+    numCircles = 3;
+    while (i < numCircles) {
+      aCircleGeom = new THREE.CircleGeometry(this.circle.geometry.radius * .465, 60);
+      aCircleMaterial = new THREE.MeshBasicMaterial({
+        color: 0x000000
+      });
+      aNode = new THREE.Object3D;
+      aCircle = new THREE.Mesh(aCircleGeom, aCircleMaterial);
+      aCircle.position.z = 1;
+      aCircle.position.x = aCircle.geometry.radius * this.circleDistanceScale;
+      aNode.rotation.z = (i / numCircles) * Math.PI * 2;
+      aNode.add(aCircle);
+      this.circle.add(aNode);
+      i++;
+    }
+    this.scene.add(this.circle);
     return this.update();
   };
 
