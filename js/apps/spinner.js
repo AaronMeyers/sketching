@@ -27,7 +27,7 @@ function init() {
 
 	renderer = new THREE.WebGLRenderer({preserveDrawingBuffer:true, antialias:true});
 	renderer.setSize( WIDTH, HEIGHT );
-	document.getElementById( 'container' ).appendChild( renderer.domElement );
+	$('#container').append( renderer.domElement );
 	
 	scene = new THREE.Scene();
 	camera = new THREE.OrthographicCamera( WIDTH / -2, WIDTH / 2, HEIGHT / 2, HEIGHT / - 2, - 5000, 5000 );
