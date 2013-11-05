@@ -5,6 +5,7 @@ var Scene,
 Scene = (function() {
   function Scene(options) {
     this.update = __bind(this.update, this);
+    var _this = this;
     this.WIDTH = options.width !== void 0 ? options.width : 500;
     this.HEIGHT = options.height !== void 0 ? options.height : 500;
     this.renderer = new THREE.WebGLRenderer({
@@ -15,7 +16,7 @@ Scene = (function() {
     $('#container').append(this.renderer.domElement);
     this.scene = new THREE.Scene();
     this.camera = new THREE.OrthographicCamera(this.WIDTH / -2, this.WIDTH / 2, this.HEIGHT / 2, this.HEIGHT / -2, -5000, 5000);
-    this.frameLength = 1000 / 30;
+    this.frameLength = 1000 / 60;
     this.time = 0;
     this.frames = [];
     this.saveFrames = false;
@@ -23,6 +24,41 @@ Scene = (function() {
       height: 1000,
       width: 300
     });
+    this.cameraTarget = new THREE.Vector3;
+    this.cameraTargetStart = new THREE.Vector3;
+    this.cameraTargetLerp = 0;
+    this.cameraWidth = this.WIDTH;
+    this.targetCircle = null;
+    this.circleRotationStart = 0;
+    this.circleRotationEnd = 0;
+    this.mousePos = new THREE.Vector2;
+    this.mouseDown = false;
+    $('#container').on('mousedown', function(e) {
+      var tween;
+      _this.targetCircle = _this.circle.children[0].children[0];
+      _this.cameraTargetStart.set(_this.cameraTarget.x, _this.cameraTarget.y, _this.cameraTarget.z);
+      _this.cameraTargetLerp = 0;
+      _this.circleRotationStart = _this.targetCircle.rotation.z;
+      _this.circleRotationEnd = -Math.PI;
+      tween = new TWEEN.Tween(_this);
+      tween.to({
+        cameraWidth: _this.targetCircle.geometry.radius * 2,
+        cameraTargetLerp: 1
+      }, 1000);
+      tween.easing(TWEEN.Easing.Quadratic.InOut);
+      tween.onUpdate(function() {
+        var worldPos;
+        worldPos = new THREE.Vector3;
+        _this.targetCircle.parent.parent.rotation.z = utils.lerp(_this.circleRotationStart, _this.circleRotationEnd, _this.cameraTargetLerp);
+        _this.targetCircle.parent.updateMatrixWorld();
+        worldPos.getPositionFromMatrix(_this.targetCircle.matrixWorld);
+        worldPos.lerp(_this.cameraTargetStart, 1.0 - _this.cameraTargetLerp);
+        return _this.cameraTarget = worldPos.clone();
+      });
+      return tween.start();
+    });
+    this.smallSize = 200;
+    this.gui.add(this, 'smallSize', 100, 500);
   }
 
   Scene.prototype.init = function() {
@@ -53,13 +89,21 @@ Scene = (function() {
   };
 
   Scene.prototype.update = function() {
-    var frame,
+    var frame, worldPos,
       _this = this;
     setTimeout((function() {
       return requestAnimationFrame(_this.update);
     }), this.frameLength);
     TWEEN.update(this.time);
     this.time += this.frameLength;
+    this.circle.children[0].updateMatrixWorld();
+    worldPos = new THREE.Vector3;
+    worldPos.getPositionFromMatrix(this.circle.children[0].children[0].matrixWorld);
+    this.camera.left = this.cameraTarget.x - this.cameraWidth / 2;
+    this.camera.right = this.cameraTarget.x + this.cameraWidth / 2;
+    this.camera.top = this.cameraTarget.y + this.cameraWidth / 2;
+    this.camera.bottom = this.cameraTarget.y - this.cameraWidth / 2;
+    this.camera.updateProjectionMatrix();
     this.renderer.render(this.scene, this.camera);
     if (this.saveFrames) {
       frame = renderer.domElement.toDataURL.replace(/^data:image\/(png|jpg);base64,/, "");
