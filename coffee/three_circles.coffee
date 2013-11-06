@@ -11,11 +11,19 @@ class Scene
 
 		@scene = new THREE.Scene()
 		@camera = new THREE.OrthographicCamera( @WIDTH / -2, @WIDTH / 2, @HEIGHT / 2, @HEIGHT / - 2, -5000, 5000 )
-		@frameLength = 1000/60
+		@frameLength = 1000/30
 		@time = 0
 		@frames = []
 		@saveFrames = false
 		@gui = new dat.GUI {height: 1000, width:300}
+
+		@startingLevel = 1
+		@numLevels = 5
+		@allCircles = []
+		i = 0
+		while i<@numLevels
+			@allCircles[i] = []
+			i++
 
 		@cameraTarget = new THREE.Vector3 # the center point where the camera renders each frame
 		@cameraTargetStart = new THREE.Vector3 # where the camera starts from at the beginning of a tween
@@ -25,70 +33,106 @@ class Scene
 		@circleRotationStart = 0
 		@circleRotationEnd = 0
 
-
-		#mouse stuff
-		@mousePos = new THREE.Vector2
-		@mouseDown = false;
-		$('#container').on 'mousedown', (e)=>
-			@targetCircle = @circle.children[0].children[0]
-			@cameraTargetStart.set @cameraTarget.x, @cameraTarget.y, @cameraTarget.z
-			@cameraTargetLerp = 0
-			@circleRotationStart = @targetCircle.rotation.z
-			@circleRotationEnd = -Math.PI
-
-			tween = new TWEEN.Tween this
-			tween.to {cameraWidth:@targetCircle.geometry.radius*2, cameraTargetLerp:1}, 1000
-			tween.easing TWEEN.Easing.Quadratic.InOut
-			tween.onUpdate =>
-				# console.log @cameraWidth
-				# get the targets world position
-				worldPos = new THREE.Vector3
-				@targetCircle.parent.parent.rotation.z = utils.lerp( @circleRotationStart, @circleRotationEnd, @cameraTargetLerp )
-				@targetCircle.parent.updateMatrixWorld()
-				worldPos.getPositionFromMatrix @targetCircle.matrixWorld
-				worldPos.lerp( @cameraTargetStart, 1.0 - @cameraTargetLerp )
-				@cameraTarget = worldPos.clone()
-
-
-
-			tween.start()
-			# @mouseDown = true;
-			# @mousePos.set e.offsetX - @WIDTH/2, (@HEIGHT - e.offsetY - @HEIGHT/2)
-			# $('#container').on 'mousemove', (e)=>
-			# 	@mousePos.set e.offsetX - @WIDTH/2, (@HEIGHT - e.offsetY - @HEIGHT/2)
-			# $('#container').on 'mouseup', (e)=>
-			# 	@mouseDown = false
-			# 	$('#container').off 'mousemove'
-
-		@smallSize = 200
-		@gui.add this, 'smallSize', 100, 500
+		# $('#container').on 'mousedown', (e)=>
+		# 	@reset()
+		# 	@animateIntoCircle @allCircles[@startingLevel+1][0]
 
 	init: ->
 
-		circleGeom		= new THREE.CircleGeometry @WIDTH/2, 60
-		circleMaterial	= new THREE.MeshBasicMaterial {color:0xFFFFFF}
+		circleGeom		= new THREE.CircleGeometry @WIDTH/2, 100
+		circleMaterial	= new THREE.MeshBasicMaterial {color:0xFFFFFF, wireframe:false}
 		@circle 		= new THREE.Mesh circleGeom, circleMaterial
 
+		@createCirclesInCircle @circle
+		@scene.add @circle
+		@scene.updateMatrixWorld()
+
+		@reset()
+		@update()
+
+	reset: ->
+		@targetCircle = @allCircles[@startingLevel][0]
+		@cameraTarget = @getWorldPosition @targetCircle
+		@cameraWidth = @targetCircle.geometry.radius * 2
+
+		i=0
+		while i<@allCircles.length
+			for c, j in @allCircles[i]
+				c.rotation.z = 0
+				c.material.opacity = if i > @startingLevel + 1 then 0 else 1
+			i++
+
+		@animateIntoCircle @allCircles[@startingLevel+1][0]
+
+	animateIntoCircle: ( theCircle )->
+		console.log 'animate into circle'
+		@targetCircle = theCircle
+		@cameraTargetStart.set @cameraTarget.x, @cameraTarget.y, @cameraTarget.z
+		@cameraTargetLerp = 0
+		@circleRotationStart = @targetCircle.rotation.z
+		@circleRotationEnd = @circleRotationStart - Math.PI
+		# @circleRotationEnd = if @targetCircle.level % 2 is 1 then -Math.PI else Math.PI
+
+		tween = new TWEEN.Tween this
+		tween.to {cameraWidth:@targetCircle.geometry.radius*2, cameraTargetLerp:1}, 1000
+		tween.easing TWEEN.Easing.Quadratic.InOut
+		tween.onUpdate =>
+			# @targetCircle.parent.parent.rotation.z = utils.lerp( @circleRotationStart, @circleRotationEnd, @cameraTargetLerp )
+			for c, i in @allCircles[@targetCircle.level-1]
+				c.rotation.z = utils.lerp @circleRotationStart, @circleRotationEnd, @cameraTargetLerp
+
+			worldPos = new THREE.Vector3
+			@targetCircle.parent.parent.updateMatrixWorld()
+			worldPos.getPositionFromMatrix @targetCircle.matrixWorld
+			worldPos.lerp( @cameraTargetStart, 1.0 - @cameraTargetLerp )
+			@cameraTarget = worldPos.clone()
+			# for c, i in @allCircles[@targetCircle.level]
+			# 	c.rotation.z = Math.PI * 4/3 * @cameraTargetLerp	
+			for c, i in @allCircles[@targetCircle.level+1]
+				c.material.opacity = @cameraTargetLerp
+		tween.onComplete =>
+			if ( @targetCircle.level+2 < @numLevels )
+				@animateIntoCircle @allCircles[@targetCircle.level+1][0]
+			else
+				@reset()
+		# tween.delay( 1000 )
+		tween.start( @time )
+
+	createCirclesInCircle: ( theCircle, level = 0 )->
 		# make three circles
 		i = 0
 		numCircles = 3
 		while i < numCircles
+			color = if level % 2 is 1 then 0xFFFFFF else 0x000000
+			opacity = if level > @startingLevel + 1 then 0 else 1
+			# opacity = 1
 			# http://en.wikipedia.org/wiki/Circle_packing_in_a_circle
-			aCircleGeom			= new THREE.CircleGeometry @circle.geometry.radius / (1+(2/3)*Math.sqrt(3)), 60
-			aCircleMaterial		= new THREE.MeshBasicMaterial {color:0x000000}
+			aCircleGeom			= new THREE.CircleGeometry theCircle.geometry.radius / (1+(2/3)*Math.sqrt(3)), 60
+			aCircleMaterial		= new THREE.MeshBasicMaterial {color:color, wireframe:false, transparent:true, opacity:opacity}
 
 			aNode				= new THREE.Object3D
 			aCircle 			= new THREE.Mesh aCircleGeom, aCircleMaterial
 			aCircle.position.z = 1
-			aCircle.position.x = @circle.geometry.radius - aCircle.geometry.radius
+			aCircle.position.x = theCircle.geometry.radius - aCircle.geometry.radius
 			aNode.rotation.z = (i / numCircles) * Math.PI * 2
 			aNode.add aCircle
-			@circle.add aNode
+			theCircle.add aNode
+
+			aCircle.level = level
+			@allCircles[level].push( aCircle )
+
+			if ( level+1 < @numLevels )
+				@createCirclesInCircle aCircle, level+1
 			i++
 
-		@scene.add @circle
+		# theCircle.rotation.z = if level % 2 is 1 then 0 else Math.PI * 2
+		# theCircle.rotation.z = Math.PI
 
-		@update()
+	getWorldPosition: ( node ) ->
+		vector = new THREE.Vector3
+		node.updateMatrixWorld()
+		vector.getPositionFromMatrix node.matrixWorld
+		return vector
 
 	update: =>
 		setTimeout (=>
@@ -98,14 +142,10 @@ class Scene
 		TWEEN.update @time
 		@time += @frameLength
 
-		# @circle.rotation.z += .01
-
 		# update the first node's world matrix
 		@circle.children[0].updateMatrixWorld()
 		worldPos = new THREE.Vector3
 		worldPos.getPositionFromMatrix @circle.children[0].children[0].matrixWorld
-
-		# @cameraTarget = worldPos.clone()
 
 		@camera.left	= @cameraTarget.x - @cameraWidth/2
 		@camera.right	= @cameraTarget.x + @cameraWidth/2
