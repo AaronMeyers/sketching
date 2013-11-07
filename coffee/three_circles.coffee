@@ -16,9 +16,11 @@ class Scene
 		@frames = []
 		@saveFrames = false
 		@gui = new dat.GUI {height: 1000, width:300}
+		@rotationAmount = 1
+		@gui.add( this, 'rotationAmount', -4, 4 ).step .05
 
-		@startingLevel = 1
-		@numLevels = 5
+		@startingLevel = 0
+		@numLevels = 4
 		@allCircles = []
 		i = 0
 		while i<@numLevels
@@ -33,9 +35,9 @@ class Scene
 		@circleRotationStart = 0
 		@circleRotationEnd = 0
 
-		# $('#container').on 'mousedown', (e)=>
-		# 	@reset()
-		# 	@animateIntoCircle @allCircles[@startingLevel+1][0]
+		$('#container').on 'mousedown', (e)=>
+			@reset()
+			@animateIntoCircle @allCircles[@startingLevel+1][0]
 
 	init: ->
 
@@ -45,6 +47,12 @@ class Scene
 
 		@createCirclesInCircle @circle
 		@scene.add @circle
+
+		@whiteShield = new THREE.Mesh( new THREE.PlaneGeometry( 500, 500 ), new THREE.MeshBasicMaterial({transparent:true,color:0xFFFFFF}) )
+		@blackShield = new THREE.Mesh( new THREE.PlaneGeometry( 500, 500 ), new THREE.MeshBasicMaterial({transparent:true,color:0x000000}) )
+		@scene.add @whiteShield
+		@scene.add @blackShield
+
 		@scene.updateMatrixWorld()
 
 		@reset()
@@ -54,6 +62,11 @@ class Scene
 		@targetCircle = @allCircles[@startingLevel][0]
 		@cameraTarget = @getWorldPosition @targetCircle
 		@cameraWidth = @targetCircle.geometry.radius * 2
+
+		@currentShield = if @startingLevel % 2 is 0 then @whiteShield else @blackShield
+		@targetCircle.add @currentShield
+		@currentShield.position.z = -.01
+		@targetCircle.position.z = .1
 
 		i=0
 		while i<@allCircles.length
@@ -65,13 +78,18 @@ class Scene
 		@animateIntoCircle @allCircles[@startingLevel+1][0]
 
 	animateIntoCircle: ( theCircle )->
-		console.log 'animate into circle'
 		@targetCircle = theCircle
 		@cameraTargetStart.set @cameraTarget.x, @cameraTarget.y, @cameraTarget.z
 		@cameraTargetLerp = 0
 		@circleRotationStart = @targetCircle.rotation.z
-		@circleRotationEnd = @circleRotationStart - Math.PI
-		# @circleRotationEnd = if @targetCircle.level % 2 is 1 then -Math.PI else Math.PI
+		@circleRotationEnd = @circleRotationStart - Math.PI * @rotationAmount
+
+		@currentShield = ( if theCircle.level % 2 is 1 then @blackShield else @whiteShield )
+		# @currentShield = @whiteShield
+		@targetCircle.add @currentShield
+		@currentShield.material.opacity = 0;
+		@currentShield.position.z = -.01
+		@targetCircle.position.z = .1
 
 		tween = new TWEEN.Tween this
 		tween.to {cameraWidth:@targetCircle.geometry.radius*2, cameraTargetLerp:1}, 1000
@@ -86,8 +104,11 @@ class Scene
 			worldPos.getPositionFromMatrix @targetCircle.matrixWorld
 			worldPos.lerp( @cameraTargetStart, 1.0 - @cameraTargetLerp )
 			@cameraTarget = worldPos.clone()
-			# for c, i in @allCircles[@targetCircle.level]
-			# 	c.rotation.z = Math.PI * 4/3 * @cameraTargetLerp	
+
+			@currentShield.material.opacity = @cameraTargetLerp
+
+			for c, i in @allCircles[@targetCircle.level]
+				c.rotation.z = Math.PI * 4/3 * @cameraTargetLerp	
 			for c, i in @allCircles[@targetCircle.level+1]
 				c.material.opacity = @cameraTargetLerp
 		tween.onComplete =>
@@ -112,7 +133,7 @@ class Scene
 
 			aNode				= new THREE.Object3D
 			aCircle 			= new THREE.Mesh aCircleGeom, aCircleMaterial
-			aCircle.position.z = 1
+			aCircle.position.z = .01
 			aCircle.position.x = theCircle.geometry.radius - aCircle.geometry.radius
 			aNode.rotation.z = (i / numCircles) * Math.PI * 2
 			aNode.add aCircle
@@ -124,9 +145,6 @@ class Scene
 			if ( level+1 < @numLevels )
 				@createCirclesInCircle aCircle, level+1
 			i++
-
-		# theCircle.rotation.z = if level % 2 is 1 then 0 else Math.PI * 2
-		# theCircle.rotation.z = Math.PI
 
 	getWorldPosition: ( node ) ->
 		vector = new THREE.Vector3

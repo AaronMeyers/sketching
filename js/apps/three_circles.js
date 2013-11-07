@@ -5,7 +5,8 @@ var Scene,
 Scene = (function() {
   function Scene(options) {
     this.update = __bind(this.update, this);
-    var i;
+    var i,
+      _this = this;
     this.WIDTH = options.width !== void 0 ? options.width : 500;
     this.HEIGHT = options.height !== void 0 ? options.height : 500;
     this.renderer = new THREE.WebGLRenderer({
@@ -24,8 +25,10 @@ Scene = (function() {
       height: 1000,
       width: 300
     });
-    this.startingLevel = 1;
-    this.numLevels = 5;
+    this.rotationAmount = 1;
+    this.gui.add(this, 'rotationAmount', -4, 4).step(.05);
+    this.startingLevel = 0;
+    this.numLevels = 4;
     this.allCircles = [];
     i = 0;
     while (i < this.numLevels) {
@@ -39,6 +42,10 @@ Scene = (function() {
     this.targetCircle = null;
     this.circleRotationStart = 0;
     this.circleRotationEnd = 0;
+    $('#container').on('mousedown', function(e) {
+      _this.reset();
+      return _this.animateIntoCircle(_this.allCircles[_this.startingLevel + 1][0]);
+    });
   }
 
   Scene.prototype.init = function() {
@@ -51,6 +58,16 @@ Scene = (function() {
     this.circle = new THREE.Mesh(circleGeom, circleMaterial);
     this.createCirclesInCircle(this.circle);
     this.scene.add(this.circle);
+    this.whiteShield = new THREE.Mesh(new THREE.PlaneGeometry(500, 500), new THREE.MeshBasicMaterial({
+      transparent: true,
+      color: 0xFFFFFF
+    }));
+    this.blackShield = new THREE.Mesh(new THREE.PlaneGeometry(500, 500), new THREE.MeshBasicMaterial({
+      transparent: true,
+      color: 0x000000
+    }));
+    this.scene.add(this.whiteShield);
+    this.scene.add(this.blackShield);
     this.scene.updateMatrixWorld();
     this.reset();
     return this.update();
@@ -61,6 +78,10 @@ Scene = (function() {
     this.targetCircle = this.allCircles[this.startingLevel][0];
     this.cameraTarget = this.getWorldPosition(this.targetCircle);
     this.cameraWidth = this.targetCircle.geometry.radius * 2;
+    this.currentShield = this.startingLevel % 2 === 0 ? this.whiteShield : this.blackShield;
+    this.targetCircle.add(this.currentShield);
+    this.currentShield.position.z = -.01;
+    this.targetCircle.position.z = .1;
     i = 0;
     while (i < this.allCircles.length) {
       _ref = this.allCircles[i];
@@ -77,12 +98,16 @@ Scene = (function() {
   Scene.prototype.animateIntoCircle = function(theCircle) {
     var tween,
       _this = this;
-    console.log('animate into circle');
     this.targetCircle = theCircle;
     this.cameraTargetStart.set(this.cameraTarget.x, this.cameraTarget.y, this.cameraTarget.z);
     this.cameraTargetLerp = 0;
     this.circleRotationStart = this.targetCircle.rotation.z;
-    this.circleRotationEnd = this.circleRotationStart - Math.PI;
+    this.circleRotationEnd = this.circleRotationStart - Math.PI * this.rotationAmount;
+    this.currentShield = (theCircle.level % 2 === 1 ? this.blackShield : this.whiteShield);
+    this.targetCircle.add(this.currentShield);
+    this.currentShield.material.opacity = 0;
+    this.currentShield.position.z = -.01;
+    this.targetCircle.position.z = .1;
     tween = new TWEEN.Tween(this);
     tween.to({
       cameraWidth: this.targetCircle.geometry.radius * 2,
@@ -90,7 +115,7 @@ Scene = (function() {
     }, 1000);
     tween.easing(TWEEN.Easing.Quadratic.InOut);
     tween.onUpdate(function() {
-      var c, i, worldPos, _i, _j, _len, _len1, _ref, _ref1, _results;
+      var c, i, worldPos, _i, _j, _k, _len, _len1, _len2, _ref, _ref1, _ref2, _results;
       _ref = _this.allCircles[_this.targetCircle.level - 1];
       for (i = _i = 0, _len = _ref.length; _i < _len; i = ++_i) {
         c = _ref[i];
@@ -101,10 +126,16 @@ Scene = (function() {
       worldPos.getPositionFromMatrix(_this.targetCircle.matrixWorld);
       worldPos.lerp(_this.cameraTargetStart, 1.0 - _this.cameraTargetLerp);
       _this.cameraTarget = worldPos.clone();
-      _ref1 = _this.allCircles[_this.targetCircle.level + 1];
-      _results = [];
+      _this.currentShield.material.opacity = _this.cameraTargetLerp;
+      _ref1 = _this.allCircles[_this.targetCircle.level];
       for (i = _j = 0, _len1 = _ref1.length; _j < _len1; i = ++_j) {
         c = _ref1[i];
+        c.rotation.z = Math.PI * 4 / 3 * _this.cameraTargetLerp;
+      }
+      _ref2 = _this.allCircles[_this.targetCircle.level + 1];
+      _results = [];
+      for (i = _k = 0, _len2 = _ref2.length; _k < _len2; i = ++_k) {
+        c = _ref2[i];
         _results.push(c.material.opacity = _this.cameraTargetLerp);
       }
       return _results;
@@ -139,7 +170,7 @@ Scene = (function() {
       });
       aNode = new THREE.Object3D;
       aCircle = new THREE.Mesh(aCircleGeom, aCircleMaterial);
-      aCircle.position.z = 1;
+      aCircle.position.z = .01;
       aCircle.position.x = theCircle.geometry.radius - aCircle.geometry.radius;
       aNode.rotation.z = (i / numCircles) * Math.PI * 2;
       aNode.add(aCircle);
