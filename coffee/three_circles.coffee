@@ -1,5 +1,10 @@
-class Scene
+# If you're reading this, sorry its kind of ugly.
+# I initially thought it'd be a super simple idea to implement
+# and then making it loop totally seamlessly proved trickier than expected
+# and I wound up using a hacky fade, which was also tricker than expected
+# and now I'm just glad to stop working on this one!
 
+class Scene
 	constructor: (options) ->
 
 		@WIDTH = if options.width != undefined then options.width else 500
@@ -14,7 +19,7 @@ class Scene
 		@frameLength = 1000/30
 		@time = 0
 		@frames = []
-		@saveFrames = false
+		@saveFrames = true
 		@gui = new dat.GUI {height: 1000, width:300}
 		@rotationAmount = 1
 		@gui.add( this, 'rotationAmount', -4, 4 ).step .05
@@ -115,8 +120,12 @@ class Scene
 			if ( @targetCircle.level+2 < @numLevels )
 				@animateIntoCircle @allCircles[@targetCircle.level+1][0]
 			else
+				if @saveFrames
+					@saveFrames = false
+					@saveFramesToZip()
+					$('#download').fadeIn()
 				@reset()
-		# tween.delay( 1000 )
+		# tween.delay( 200 )
 		tween.start( @time )
 
 	createCirclesInCircle: ( theCircle, level = 0 )->
@@ -152,6 +161,24 @@ class Scene
 		vector.getPositionFromMatrix node.matrixWorld
 		return vector
 
+	saveFramesToZip: ->
+		pad = ( n, width, z )->
+			z = z || '0'
+			n = n + '' 
+			return if n.length >= width then n else new Array(width - n.length + 1).join(z) + n
+
+		zip = new JSZip()
+		folder = zip.folder( "frames" )
+		i = 0
+		while i<@frames.length
+			folder.file( "frame" + pad(i,3,0) + ".png", @frames[i], {base64:true} )
+			i++
+
+		# location.href = "data:application/zip;base64,"+zip.generate();
+		blobLink = document.getElementById('download')
+		blobLink.download = "frames.zip"
+		blobLink.href = window.URL.createObjectURL( zip.generate({type:"blob"} ) )
+
 	update: =>
 		setTimeout (=>
 			requestAnimationFrame( @update )
@@ -175,7 +202,7 @@ class Scene
 		@renderer.render @scene, @camera
 
 		if @saveFrames
-			frame = renderer.domElement.toDataURL.replace /^data:image\/(png|jpg);base64,/, ""
+			frame = @renderer.domElement.toDataURL().replace /^data:image\/(png|jpg);base64,/, ""
 			@frames.push frame
 
 
