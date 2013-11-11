@@ -2,9 +2,9 @@ class MoireCone
 	constructor: (options = {}) ->
 		@angle			= if options.angle? then options.angle else 50
 		@numLines		= if options.numLines? then options.numLines else 16
-		@radius 		= if options.radius? then options.radius else 400
-		@lineManager 	= new LineManager {maxLines:@numLines}
-		@mesh 			= @lineManager.mesh
+		@radius			= if options.radius? then options.radius else 400
+		@lineManager	= new LineManager {maxLines:@numLines}
+		@mesh			= @lineManager.mesh
 		@position		= @mesh.position
 		@rotation		= @mesh.rotation
 		@homeX			= if options.homeX? then options.homeX else 0
