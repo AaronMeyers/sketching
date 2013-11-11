@@ -35,7 +35,7 @@ Scene = (function() {
     this.time += this.frameLength;
     this.renderer.render(this.scene, this.camera);
     if (this.saveFrames) {
-      frame = this.renderer.domElement.toDataURL.replace(/^data:image\/(png|jpg);base64,/, "");
+      frame = this.renderer.domElement.toDataURL().replace(/^data:image\/(png|jpg);base64,/, "");
       return this.frames.push(frame);
     }
   };

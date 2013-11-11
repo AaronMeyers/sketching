@@ -29,5 +29,5 @@ class Scene
 		@renderer.render @scene, @camera
 
 		if @saveFrames
-			frame = @renderer.domElement.toDataURL.replace /^data:image\/(png|jpg);base64,/, ""
+			frame = @renderer.domElement.toDataURL().replace /^data:image\/(png|jpg);base64,/, ""
 			@frames.push frame

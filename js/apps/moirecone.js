@@ -8,7 +8,7 @@ MoireCone = (function() {
       options = {};
     }
     this.angle = options.angle != null ? options.angle : 50;
-    this.numLines = options.numLines != null ? options.numLines : 20;
+    this.numLines = options.numLines != null ? options.numLines : 16;
     this.radius = options.radius != null ? options.radius : 400;
     this.lineManager = new LineManager({
       maxLines: this.numLines
@@ -57,24 +57,34 @@ Scene = (function() {
     $('#container').append(this.renderer.domElement);
     this.scene = new THREE.Scene();
     this.camera = new THREE.OrthographicCamera(this.WIDTH / -2, this.WIDTH / 2, this.HEIGHT, 0, -5000, 5000);
-    this.frameLength = 1000 / 30;
+    this.frameLength = 1000 / 24;
     this.time = 0;
     this.frames = [];
-    this.saveFrames = false;
+    this.saveFrames = true;
+    this.gui = new dat.GUI({
+      height: 1000,
+      width: 300
+    });
   }
 
   Scene.prototype.init = function() {
-    var coneL, coneR, i, _i, _ref;
+    var blackBackground, coneL, coneR, i, _i, _ref;
     this.bigAngle = 28;
-    this.smallAngle = 15;
+    this.smallAngle = 14.25;
     this.angle = this.bigAngle;
+    blackBackground = new THREE.Mesh(new THREE.PlaneGeometry(this.WIDTH, this.HEIGHT), new THREE.MeshBasicMaterial({
+      color: 0x0
+    }));
+    blackBackground.position.z = -1;
+    blackBackground.position.y = this.HEIGHT / 2;
+    this.scene.add(blackBackground);
     this.cone = new MoireCone({
       radius: this.HEIGHT + 100,
       angle: this.angle
     });
     this.scene.add(this.cone.mesh);
     this.sideCones = [];
-    this.conesPerSide = 15;
+    this.conesPerSide = 5;
     for (i = _i = 1, _ref = this.conesPerSide; 1 <= _ref ? _i <= _ref : _i >= _ref; i = 1 <= _ref ? ++_i : --_i) {
       coneL = new MoireCone({
         angle: this.angle,
@@ -95,7 +105,36 @@ Scene = (function() {
       this.sideCones.push(coneL, coneR);
     }
     this.tweenToAngle(this.smallAngle);
+    this.gui.add(this, 'bigAngle', 20, 100);
+    this.gui.add(this, 'smallAngle', 5, 20);
     return this.update();
+  };
+
+  Scene.prototype.saveFramesToZip = function() {
+    var blobLink, folder, i, pad, zip;
+    pad = function(n, width, z) {
+      z = z || '0';
+      n = n + '';
+      if (n.length >= width) {
+        return n;
+      } else {
+        return new Array(width - n.length + 1).join(z) + n;
+      }
+    };
+    zip = new JSZip();
+    folder = zip.folder("frames");
+    i = 0;
+    while (i < this.frames.length) {
+      folder.file("frame" + pad(i, 3, 0) + ".png", this.frames[i], {
+        base64: true
+      });
+      i++;
+    }
+    blobLink = document.getElementById('download');
+    blobLink.download = "frames.zip";
+    return blobLink.href = window.URL.createObjectURL(zip.generate({
+      type: "blob"
+    }));
   };
 
   Scene.prototype.tweenToAngle = function(angle) {
@@ -103,8 +142,8 @@ Scene = (function() {
     tween = new TWEEN.Tween(this);
     tween.to({
       angle: angle
-    }, 2000);
-    tween.easing(TWEEN.Easing.Sinusoidal.InOut);
+    }, 1200);
+    tween.easing(TWEEN.Easing.Quadratic.InOut);
     tween.onUpdate(function() {
       var i, _i, _ref, _results;
       this.cone.setAngle(this.angle);
@@ -118,7 +157,12 @@ Scene = (function() {
       return _results;
     });
     tween.onComplete(function() {
-      return this.tweenToAngle(this.angle === this.bigAngle ? this.smallAngle : this.bigAngle);
+      this.tweenToAngle(this.angle === this.bigAngle ? this.smallAngle : this.bigAngle);
+      if (this.angle === this.bigAngle && this.saveFrames) {
+        this.saveFrames = false;
+        this.saveFramesToZip();
+        return $('#download').fadeIn();
+      }
     });
     return tween.start(this.time);
   };
@@ -133,7 +177,7 @@ Scene = (function() {
     this.time += this.frameLength;
     this.renderer.render(this.scene, this.camera);
     if (this.saveFrames) {
-      frame = this.renderer.domElement.toDataURL.replace(/^data:image\/(png|jpg);base64,/, "");
+      frame = this.renderer.domElement.toDataURL().replace(/^data:image\/(png|jpg);base64,/, "");
       return this.frames.push(frame);
     }
   };
