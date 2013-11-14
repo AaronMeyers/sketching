@@ -81,9 +81,6 @@ class Scene
 		TWEEN.update @time
 		@time += @frameLength
 
-		# @cube.rotation.x += .01
-		# @cube.rotation.z += .01
-
 		@renderer.render @sceneL, @camera, @renderTextureL, true
 		@renderer.render @sceneR, @camera, @renderTextureR, true
 		@renderer.render @scene, @camera
@@ -110,7 +107,6 @@ class Scene
 			folder.file( "frame" + pad(i,3,0) + ".png", @frames[i], {base64:true} )
 			i++
 
-		# location.href = "data:application/zip;base64,"+zip.generate();
 		blobLink = document.getElementById('download')
 		blobLink.download = "frames.zip"
 		blobLink.href = window.URL.createObjectURL( zip.generate({type:"blob"} ) )
