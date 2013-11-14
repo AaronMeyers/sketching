@@ -1,7 +1,8 @@
 sketching
 =========
 
-making short looping animations.
+making short looping animations, posted to http://teleaaron.tumblr.com
+
 you'll need to check out three.js in a parallel directory.
 
 ![alt tag](http://31.media.tumblr.com/9b0867bb56739a2b1afcb2ff975eba59/tumblr_mvftf1W8qJ1r0yj59o1_100.gif)
