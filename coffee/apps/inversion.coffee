@@ -26,6 +26,16 @@ class Scene
 			node.add circle
 		return node
 
+	makeBox: (width, numBoxes)->
+		node = new THREE.Object3D
+		for i in [1..numBoxes]
+			boxWidth = utils.map( i, 1, numBoxes+1, width, 0 )
+			color = if i%2==0 then 0x000000 else 0xFFFFFF
+			box = new THREE.Mesh( new THREE.PlaneGeometry( boxWidth, boxWidth ), new THREE.MeshBasicMaterial({color:color}) )
+			box.position.z = i * .01
+			node.add box
+		return node
+
 	tweenNodePos: (node, pos, time)->
 		tween = new TWEEN.Tween {node:node, posX:node.position.x, posY:node.position.y, posZ: node.position.z}
 		tween.to {posX:pos.x, posY:pos.y, posZ:pos.z}, time
