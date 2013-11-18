@@ -36,6 +36,21 @@ Scene = (function() {
     return node;
   };
 
+  Scene.prototype.makeBox = function(width, numBoxes) {
+    var box, boxWidth, color, i, node, _i;
+    node = new THREE.Object3D;
+    for (i = _i = 1; 1 <= numBoxes ? _i <= numBoxes : _i >= numBoxes; i = 1 <= numBoxes ? ++_i : --_i) {
+      boxWidth = utils.map(i, 1, numBoxes + 1, width, 0);
+      color = i % 2 === 0 ? 0x000000 : 0xFFFFFF;
+      box = new THREE.Mesh(new THREE.PlaneGeometry(boxWidth, boxWidth), new THREE.MeshBasicMaterial({
+        color: color
+      }));
+      box.position.z = i * .01;
+      node.add(box);
+    }
+    return node;
+  };
+
   Scene.prototype.tweenNodePos = function(node, pos, time) {
     var tween;
     tween = new TWEEN.Tween({
