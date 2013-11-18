@@ -38,7 +38,7 @@ class Scene
 		@frameLength = 1000/30
 		@time = 0
 		@frames = []
-		@saveFrames = false
+		@saveFrames = true
 
 	init: ->
 		@animate = true
